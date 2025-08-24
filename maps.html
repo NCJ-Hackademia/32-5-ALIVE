@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bangalore LiveMaps - Real-Time Navigation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            color: #3498db;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title i {
+            color: #3498db;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #34495e;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group input {
+            width: auto;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .weather-widget {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .weather-icon {
+            font-size: 32px;
+            color: #f39c12;
+        }
+
+        .weather-info h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .weather-info p {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .route-info {
+            background: #e8f4fc;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .route-info h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .route-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .route-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .route-detail .label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .route-detail .value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .time-constraint {
+            display: flex;
+            gap: 10px;
+        }
+
+        .time-constraint input {
+            flex: 1;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: #e9ecef;
+        }
+
+        .control-btn i {
+            color: #3498db;
+        }
+
+        .traffic-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .traffic-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .traffic-color {
+            width: 20px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .traffic-low {
+            background: #2ecc71;
+        }
+
+        .traffic-medium {
+            background: #f39c12;
+        }
+
+        .traffic-high {
+            background: #e74c3c;
+        }
+
+        .traffic-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .datetime-widget {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .time {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .date {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: 40%;
+                order: 2;
+            }
+            
+            .map-container {
+                height: 60%;
+                order: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <span class="logo-icon">🗺️</span>
+            <h1>Bangalore LiveMaps</h1>
+        </div>
+        <div class="user-info">
+            <div class="user-avatar" id="user-avatar">JS</div>
+            <span id="user-name">Loading...</span>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="section">
+                <h2 class="section-title"><i>📍</i> Route Planner</h2>
+                <div class="form-group">
+                    <label for="start">Start Location</label>
+                    <input type="text" id="start" placeholder="Enter start location">
+                </div>
+                <div class="form-group">
+                    <label for="destination">Destination</label>
+                    <input type="text" id="destination" placeholder="Enter destination">
+                </div>
+                <div class="form-group">
+                    <label for="travel-mode">Travel Mode</label>
+                    <select id="travel-mode">
+                        <option value="driving">Car</option>
+                        <option value="bicycling">Bike (2-Wheel)</option>
+                    </select>
+                </div>
+                <button id="calculate-route">Calculate Route</button>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title"><i>⚙️</i> Route Constraints</h2>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="avoid-tolls" checked>
+                    <label for="avoid-tolls">Avoid Toll Roads</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="avoid-highways">
+                    <label for="avoid-highways">Avoid Highways</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="consider-weather" checked>
+                    <label for="consider-weather">Consider Weather Conditions</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="consider-traffic" checked>
+                    <label for="consider-traffic">Consider Traffic Conditions</label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title"><i>🌤️</i> Bangalore Weather</h2>
+                <div class="weather-widget">
+                    <div class="weather-icon" id="weather-icon">☀️</div>
+                    <div class="weather-info">
+                        <h3 id="weather-condition">Sunny</h3>
+                        <p id="weather-temp">72°F (22°C) | Humidity: 45%</p>
+                        <p id="weather-wind">Wind: 5 mph from NW</p>
+                    </div>
+                </div>
+                <div class="weather-widget">
+                    <div class="weather-icon">🌡️</div>
+                    <div class="weather-info">
+                        <h3>Road Conditions</h3>
+                        <p id="road-conditions">Dry roads | Good visibility</p>
+                        <p id="weather-delay">No weather delays expected</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title"><i>📊</i> Route Information</h2>
+                <div class="route-info">
+                    <h4>Optimal Route Calculated</h4>
+                    <div class="route-details">
+                        <div class="route-detail">
+                            <span class="label">Distance</span>
+                            <span class="value" id="route-distance">-</span>
+                        </div>
+                        <div class="route-detail">
+                            <span class="label">Duration</span>
+                            <span class="value" id="route-duration">-</span>
+                        </div>
+                        <div class="route-detail">
+                            <span class="label">With Traffic</span>
+                            <span class="value" id="route-traffic">-</span>
+                        </div>
+                        <div class="route-detail">
+                            <span class="label">Fuel Cost</span>
+                            <span class="value" id="route-cost">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <div class="datetime-widget">
+                <div class="time" id="current-time">10:30:45 AM</div>
+                <div class="date" id="current-date">Monday, June 12, 2023</div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-btn" id="current-location">
+                    <i>📍</i>
+                    <span>My Location</span>
+                </div>
+                <div class="control-btn" id="traffic-toggle">
+                    <i>🚦</i>
+                    <span>Traffic</span>
+                </div>
+                <div class="control-btn" id="weather-toggle">
+                    <i>🌤️</i>
+                    <span>Weather</span>
+                </div>
+                <div class="control-btn" id="satellite-toggle">
+                    <i>🛰️</i>
+                    <span>Satellite</span>
+                </div>
+            </div>
+            
+            <div class="traffic-legend">
+                <h4>Bangalore Traffic</h4>
+                <div class="traffic-item">
+                    <div class="traffic-color traffic-low"></div>
+                    <span>Low</span>
+                </div>
+                <div class="traffic-item">
+                    <div class="traffic-color traffic-medium"></div>
+                    <span>Medium</span>
+                </div>
+                <div class="traffic-item">
+                    <div class="traffic-color traffic-high"></div>
+                    <span>Heavy</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize map centered on Bangalore
+        const map = L.map('map').setView([12.9716, 77.5946], 12);
+        
+        // Add base tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Initialize variables
+        let trafficVisible = false;
+        let weatherVisible = false;
+        let satelliteView = false;
+        let userHomeLocation = null;
+        let userOfficeLocation = null;
+        let userCommuteMethod = null;
+        
+        // Load user data from localStorage
+        function loadUserData() {
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentSession'));
+                if (currentUser) {
+                    document.getElementById('user-name').textContent = currentUser.name;
+                    document.getElementById('user-avatar').textContent = currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                    
+                    // Load user details
+                    const userData = JSON.parse(localStorage.getItem('userData')) || {};
+                    const userDetails = userData[currentUser.email];
+                    
+                    if (userDetails) {
+                        userHomeLocation = userDetails.homeLocation;
+                        userOfficeLocation = userDetails.officeLocation;
+                        userCommuteMethod = userDetails.commuteMethod;
+                        
+                        // Set start and destination based on user data
+                        if (userHomeLocation) {
+                            document.getElementById('start').value = userHomeLocation;
+                        }
+                        
+                        if (userOfficeLocation) {
+                            document.getElementById('destination').value = userOfficeLocation;
+                        }
+                        
+                        if (userCommuteMethod) {
+                            document.getElementById('travel-mode').value = userCommuteMethod === 'car' ? 'driving' : 'bicycling';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading user data:', e);
+            }
+        }
+        
+        // Simulate Bangalore traffic data
+        function getBangaloreTraffic() {
+            // In a real app, this would come from a traffic API
+            const trafficLevels = ['low', 'medium', 'high'];
+            return trafficLevels[Math.floor(Math.random() * trafficLevels.length)];
+        }
+        
+        // Simulate Bangalore weather data
+        function getBangaloreWeather() {
+            // In a real app, this would come from a weather API
+            const weatherConditions = [
+                { condition: 'Sunny', icon: '☀️', temp: '28°C', humidity: '65%', wind: '8 km/h from SW' },
+                { condition: 'Partly Cloudy', icon: '⛅', temp: '27°C', humidity: '70%', wind: '10 km/h from W' },
+                { condition: 'Cloudy', icon: '☁️', temp: '26°C', humidity: '75%', wind: '12 km/h from NW' },
+                { condition: 'Light Rain', icon: '🌦️', temp: '25°C', humidity: '80%', wind: '15 km/h from N' }
+            ];
+            
+            return weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
+        }
+        
+        // Update weather information
+        function updateWeatherInfo() {
+            const weather = getBangaloreWeather();
+            document.getElementById('weather-icon').textContent = weather.icon;
+            document.getElementById('weather-condition').textContent = weather.condition;
+            document.getElementById('weather-temp').textContent = `${weather.temp} | Humidity: ${weather.humidity}`;
+            document.getElementById('weather-wind').textContent = `Wind: ${weather.wind}`;
+            
+            // Update road conditions based on weather
+            if (weather.condition.includes('Rain')) {
+                document.getElementById('road-conditions').textContent = 'Wet roads | Reduced visibility';
+                document.getElementById('weather-delay').textContent = 'Expect 10-15 minute delays';
+            } else {
+                document.getElementById('road-conditions').textContent = 'Dry roads | Good visibility';
+                document.getElementById('weather-delay').textContent = 'No weather delays expected';
+            }
+        }
+        
+        // Calculate route based on user preferences
+        function calculateRoute() {
+            const start = document.getElementById('start').value || userHomeLocation || "Bangalore";
+            const destination = document.getElementById('destination').value || userOfficeLocation || "Electronic City";
+            const travelMode = document.getElementById('travel-mode').value;
+            const avoidTolls = document.getElementById('avoid-tolls').checked;
+            const avoidHighways = document.getElementById('avoid-highways').checked;
+            const considerWeather = document.getElementById('consider-weather').checked;
+            const considerTraffic = document.getElementById('consider-traffic').checked;
+            
+            // Get traffic and weather conditions
+            const trafficCondition = getBangaloreTraffic();
+            const weatherCondition = getBangaloreWeather();
+            
+            // Simulate route calculation with real-time factors
+            let baseTime = 0;
+            let distance = 0;
+            
+            // Different base times for different travel modes
+            if (travelMode === 'driving') {
+                baseTime = 30 + Math.floor(Math.random() * 30); // 30-60 minutes
+                distance = 15 + Math.floor(Math.random() * 20); // 15-35 km
+            } else {
+                baseTime = 45 + Math.floor(Math.random() * 30); // 45-75 minutes
+                distance = 15 + Math.floor(Math.random() * 15); // 15-30 km
+            }
+            
+            // Adjust for traffic
+            let trafficMultiplier = 1;
+            if (considerTraffic) {
+                if (trafficCondition === 'medium') trafficMultiplier = 1.3;
+                if (trafficCondition === 'high') trafficMultiplier = 1.7;
+            }
+            
+            // Adjust for weather
+            let weatherMultiplier = 1;
+            if (considerWeather && weatherCondition.condition.includes('Rain')) {
+                weatherMultiplier = 1.4;
+            }
+            
+            // Calculate final time
+            const totalTime = Math.round(baseTime * trafficMultiplier * weatherMultiplier);
+            
+            // Calculate cost (for car only)
+            let cost = '-';
+            if (travelMode === 'driving') {
+                const fuelPrice = 105; // ₹105 per liter
+                const mileage = 15; // km per liter
+                cost = '₹' + Math.round((distance / mileage) * fuelPrice);
+            }
+            
+            // Update route information
+            document.getElementById('route-distance').textContent = `${distance} km`;
+            document.getElementById('route-duration').textContent = `${baseTime} min`;
+            document.getElementById('route-traffic').textContent = `${totalTime} min`;
+            document.getElementById('route-cost').textContent = cost;
+            
+            // Draw the route on the map (simplified)
+            drawRouteOnMap(start, destination);
+            
+            // Show notification
+            alert(`Route calculated from ${start} to ${destination}\nTravel mode: ${travelMode}\nAccounting for traffic: ${considerTraffic ? 'Yes' : 'No'}\nAccounting for weather: ${considerWeather ? 'Yes' : 'No'}`);
+        }
+        
+        // Draw a simplified route on the map
+        function drawRouteOnMap(start, destination) {
+            // Clear existing routes
+            map.eachLayer(layer => {
+                if (layer instanceof L.Polyline) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // In a real app, this would use a routing API to get actual coordinates
+            // For demonstration, we'll create a simple curved line
+            
+            // Get map center
+            const center = map.getCenter();
+            
+            // Create some offset points for a curved route
+            const startPoint = [center.lat + 0.05, center.lng - 0.05];
+            const endPoint = [center.lat - 0.05, center.lng + 0.05];
+            const viaPoint = [center.lat + 0.02, center.lng + 0.02];
+            
+            // Draw the route
+            const route = L.polyline([startPoint, viaPoint, endPoint], {
+                color: '#3498db',
+                weight: 5,
+                opacity: 0.7,
+                dashArray: '10, 10'
+            }).addTo(map);
+            
+            // Add markers
+            L.marker(startPoint).addTo(map).bindPopup(`Start: ${start}`).openPopup();
+            L.marker(endPoint).addTo(map).bindPopup(`Destination: ${destination}`);
+            
+            // Fit map to show the entire route
+            map.fitBounds(route.getBounds());
+        }
+        
+        // Update time function
+        function updateDateTime() {
+            const now = new Date();
+            const timeElement = document.getElementById('current-time');
+            const dateElement = document.getElementById('current-date');
+            
+            // Format time
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            timeElement.textContent = now.toLocaleTimeString('en-IN', timeOptions);
+            
+            // Format date
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = now.toLocaleDateString('en-IN', dateOptions);
+        }
+        
+        // Initialize the application
+        function initApp() {
+            // Load user data
+            loadUserData();
+            
+            // Update date and time
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+            
+            // Update weather information
+            updateWeatherInfo();
+            setInterval(updateWeatherInfo, 300000); // Update every 5 minutes
+            
+            // Add event listeners for control buttons
+            document.getElementById('current-location').addEventListener('click', function() {
+                map.locate({setView: true, maxZoom: 14});
+            });
+            
+            document.getElementById('traffic-toggle').addEventListener('click', function() {
+                trafficVisible = !trafficVisible;
+                alert(trafficVisible ? "Bangalore traffic overlay enabled" : "Traffic overlay disabled");
+            });
+            
+            document.getElementById('weather-toggle').addEventListener('click', function() {
+                weatherVisible = !weatherVisible;
+                alert(weatherVisible ? "Weather overlay enabled" : "Weather overlay disabled");
+            });
+            
+            document.getElementById('satellite-toggle').addEventListener('click', function() {
+                satelliteView = !satelliteView;
+                if (satelliteView) {
+                    // Switch to satellite view
+                    map.eachLayer(layer => map.removeLayer(layer));
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        attribution: 'Satellite Imagery'
+                    }).addTo(map);
+                    alert("Switched to satellite view.");
+                } else {
+                    // Switch back to standard view
+                    map.eachLayer(layer => map.removeLayer(layer));
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+                    alert("Switched to standard view.");
+                }
+            });
+            
+            // Route calculation
+            document.getElementById('calculate-route').addEventListener('click', calculateRoute);
+            
+            // Handle geolocation
+            map.on('locationfound', function(e) {
+                const radius = e.accuracy / 2;
+                L.marker(e.latlng).addTo(map).bindPopup("You are here").openPopup();
+                L.circle(e.latlng, radius).addTo(map);
+            });
+            
+            map.on('locationerror', function(e) {
+                alert("Location access denied or unavailable.");
+            });
+            
+            // Calculate a default route if user has home and office locations
+            if (userHomeLocation && userOfficeLocation) {
+                setTimeout(calculateRoute, 1000);
+            }
+        }
+        
+        // Initialize the app when the document is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
